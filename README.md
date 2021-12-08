@@ -441,7 +441,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
 
 ## On complete callbacks
 
-On-complete callbacks are defined with {TrxExt::CallbackPool#on_complete} method. An instance of {TrxExt::CallbackPool} is passed in each transaction block. You may add as much on-complete callbacks as you want by calling {TrxExt::CallbackPool#on_complete} several times - they will be executed in the order you define
+On-complete callbacks are defined with `TrxExt::CallbackPool#on_complete` method. An instance of `TrxExt::CallbackPool` is passed in each transaction block. You may add as much on-complete callbacks as you want by calling `TrxExt::CallbackPool#on_complete` several times - they will be executed in the order you define
 them(FIFO principle). The on-complete callbacks from nested transactions will be executed from the most deep to the most top transaction. Another words, if top transaction defines `<#TrxExt::CallbackPool 0x1>` instance and nested transaction defines `<#TrxExt::CallbackPool 0x2>` instance then, when executing on-complete callbacks - the callbacks of `<#TrxExt::CallbackPool 0x2>` instance will be executed first(FILO principle).
 
 Example:
