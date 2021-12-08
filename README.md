@@ -38,7 +38,7 @@ Or install it yourself as:
 require 'trx_ext'
 require 'active_record'
 
-# Object #trx is a shorthand of ActiveRecord::Base.transaction
+# Object#trx is a shorthand of ActiveRecord::Base.transaction
 trx do
   DummyRecord.first || DummyRecord.create
 end
