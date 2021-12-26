@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency 'activerecord', '~> 6'
+  spec.add_dependency 'activerecord', '>= 6'
   spec.add_dependency 'pg', '~> 1.2'
   spec.add_development_dependency 'rspec', "~> 3.10"
   spec.add_development_dependency 'timecop', "~> 0.9.4"

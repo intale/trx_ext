@@ -154,8 +154,8 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
 
     ```ruby
     trx do
-      @posts = Post.all
-      @users = User.all
+      @posts = Post.all.load
+      @users = User.all.load
     end
     ```
 
