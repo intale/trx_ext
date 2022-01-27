@@ -8,7 +8,7 @@ Currently, the implementation only works for ActiveRecord PostgreSQL adapter. Fe
 
 Because the implementation of this gem is a patch for `ActiveRecord::ConnectionAdapters::PostgreSQLAdapter` - carefully test its integration into your project. For example, if your project patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
 
-Currently, the implementation is tested for `6.0.4.4` and `6.1.4.4` versions of ActiveRecord(see [TrxExt::SUPPORTED_AR_VERSIONS](lib/trx_ext/version.rb))
+Currently, the implementation is tested for `6.0.4.4`, `6.1.4.4` and `7.0.1` versions of ActiveRecord(see [TrxExt::SUPPORTED_AR_VERSIONS](lib/trx_ext/version.rb))
 
 ## Requirements
 
