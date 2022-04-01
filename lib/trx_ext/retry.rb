@@ -28,10 +28,10 @@ module TrxExt
           yield
         rescue => error
           error_classification = error_classification(error)
-          if error_classification == :record_not_unique
-            retries_count += 1
-          end
           if retry_query?(error, retries_count)
+            if error_classification == :record_not_unique
+              retries_count += 1
+            end
             TrxExt.log("Detected transaction rollback condition. Reason - #{error_classification}. Retrying...")
             retry
           else

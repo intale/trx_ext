@@ -266,7 +266,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
         eq(
           [
             "UPDATE \"dummy_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_records\".\"id\" = #{dummy_record_2.id}"
-          ] * TrxExt.config.unique_retries
+          ] * (TrxExt.config.unique_retries + 1)
         )
       )
     end
