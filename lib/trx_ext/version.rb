@@ -2,5 +2,5 @@
 
 module TrxExt
   VERSION = "1.0.2"
-  SUPPORTED_AR_VERSIONS = %w(6.0.4.4 6.1.4.4 7.0.1).freeze
+  SUPPORTED_AR_VERSIONS = %w(6.0.4.7 6.1.5 7.0.2.3).freeze
 end
