@@ -10,7 +10,7 @@ class Config
     def db_config
       @db_config ||=
         begin
-          return unless File.exists?(DB_CONFIG_FILE)
+          return unless File.exist?(DB_CONFIG_FILE)
 
           YAML.load(ERB.new(File.read(DB_CONFIG_FILE)).result)
         end

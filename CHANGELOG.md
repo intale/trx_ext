@@ -2,6 +2,10 @@
 
 Nothing new yet
 
+## [1.0.5] - 2022-01-27
+
+- Load `Object` extension earlier
+
 ## [1.0.2] - 2022-01-27
 
 - Add support of ActiveRecord `7.0.1`

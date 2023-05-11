@@ -14,11 +14,11 @@ module TrxExt
 
     # @return [void]
     def integrate!
+      # Allow to use #wrap_in_trx and #trx methods everywhere
+      Object.prepend(TrxExt::ObjectExt)
+
       ActiveSupport.on_load(:active_record) do
         require 'active_record/connection_adapters/postgresql_adapter'
-
-        # Allow to use #wrap_in_trx and #trx methods everywhere
-        Object.prepend(TrxExt::ObjectExt)
 
         # Patch #transaction
         ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(TrxExt::Transaction)
