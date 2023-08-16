@@ -1,0 +1,31 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        ar_version:
+          - '~> 6.0'
+          - '~> 6.1'
+          - '~> 7.0'
+        ruby:
+          - '3.2'
+          - '3.1'
+          - '3.0'
+    runs-on: ubuntu-latest
+    env:
+      AR_VERSION: ${{ matrix.ar_version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1.147.0
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      - name: Run PostgreSQL
+        run: docker-compose up --detach
+      - name: Run tests
+        run: |
+          sleep 10
+          bundle exec rspec
