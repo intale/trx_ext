@@ -8,5 +8,5 @@ gemspec
 gem "rake", "~> 13.0"
 
 if ENV['AR_VERSION']
-  gem 'activerecord', ENV['AR_VERSION']
+  gem 'activerecord', *ENV['AR_VERSION'].split(',')
 end

@@ -274,7 +274,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
 
   describe 'Multi-process multi-thread integration' do
     subject do
-      Array.new(30) do
+      Array.new(Etc.nprocessors) do
         query.call
       end.each { |_, thread, pid| thread.join; Process.waitpid(pid) }
     end
@@ -321,7 +321,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
     end
     it 'creates correct amount of records' do
       subject
-      expect(DummyRecord.count).to eq(90)
+      expect(DummyRecord.count).to eq(Etc.nprocessors * 3)
     end
   end
 end
