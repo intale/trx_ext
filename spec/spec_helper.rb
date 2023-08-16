@@ -10,12 +10,6 @@ require 'active_record'
 
 Dir[File.expand_path('support/**/*.rb', __dir__)].each { |f| require(f) }
 
-if Config.db_config
-  ActiveRecord::Base.establish_connection(Config.db_config)
-else
-  raise "`#{Config::DB_CONFIG_FILE}' file does not exists."
-end
-
 logger = ActiveSupport::Logger.new('log/test.log')
 ActiveRecord::Base.logger = logger
 TrxExt.logger = logger

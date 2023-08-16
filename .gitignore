@@ -7,6 +7,5 @@
 /spec/reports/
 /tmp/
 Gemfile.lock
-spec/support/config/database.yml
 Gemfile_*
 log/*.log

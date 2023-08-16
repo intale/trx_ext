@@ -26,38 +26,30 @@ module TrxExt
         retries_count = 0
         begin
           yield
-        rescue => error
-          error_classification = error_classification(error)
-          if retry_query?(error, retries_count)
-            if error_classification == :record_not_unique
-              retries_count += 1
-            end
-            TrxExt.log("Detected transaction rollback condition. Reason - #{error_classification}. Retrying...")
-            retry
-          else
-            raise error
-          end
+        rescue ActiveRecord::SerializationFailure, ActiveRecord::RecordNotUnique, ActiveRecord::Deadlocked => error
+          raise unless retry_query?(error, retries_count)
+
+          retries_count += 1 unless indisputable_retry?(error)
+          TrxExt.log("Detected transaction rollback condition. Reason - #{error.inspect}. Retrying...")
+          retry
         end
       end
 
       private
 
-      def error_classification(error)
-        case
-        when error.message.index('deadlock detected')
-          :deadlock
-        when error.message.index('could not serialize')
-          :serialization_error
-        when error.class == ActiveRecord::RecordNotUnique
-          :record_not_unique
-        end
+      # @param error [ActiveRecord::ActiveRecordError]
+      # @return [Boolean]
+      def indisputable_retry?(error)
+        error.is_a?(ActiveRecord::Deadlocked) || error.is_a?(ActiveRecord::SerializationFailure)
       end
 
-      def retry_query?(error, retryies_count)
-        classification = error_classification(error)
-        ActiveRecord::Base.connection.open_transactions == 0 &&
-          (%i(deadlock serialization_error).include?(classification) ||
-            classification == :record_not_unique && retryies_count < TrxExt.config.unique_retries)
+      # @param error [ActiveRecord::ActiveRecordError]
+      # @param retries_count [Integer]
+      # @return [Boolean]
+      def retry_query?(error, retries_count)
+        return true if ActiveRecord::Base.connection.open_transactions == 0 && indisputable_retry?(error)
+
+        ActiveRecord::Base.connection.open_transactions == 0 && retries_count < TrxExt.config.unique_retries
       end
     end
   end

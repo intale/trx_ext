@@ -2,6 +2,8 @@ adapter: postgresql
 prepared_statements: false
 encoding: utf8
 username: postgres
-port: 5432
+password: postgres
+host: localhost
+port: 5532
 database: trx_ext_db
 pool: 40

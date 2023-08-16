@@ -7,6 +7,10 @@ class DummyRecord < ActiveRecord::Base
 
     def setup
       migration = ActiveRecord::Migration.new
+      ActiveRecord::Base.establish_connection(Config.db_config.merge('database' => 'postgres'))
+      migration.create_database(Config.db_config['database'], encoding: 'utf-8') rescue ActiveRecord::DatabaseAlreadyExists
+      ActiveRecord::Base.establish_connection(Config.db_config)
+
       if table_exists?
         if columns.map(&:name) != %w(id name unique_name created_at)
           migration.drop_table(:dummy_records)
