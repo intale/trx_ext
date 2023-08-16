@@ -26,7 +26,7 @@ jobs:
       - name: Run PostgreSQL
         run: docker-compose up --detach
       - name: Run tests
-        timeout-minute: 3
+        timeout-minutes: 3
         run: |
           sleep 10
           bundle exec rspec
