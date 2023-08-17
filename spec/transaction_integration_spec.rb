@@ -303,6 +303,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
               c.on_complete { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
+            exit
           end
         ]
       end
