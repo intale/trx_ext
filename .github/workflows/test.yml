@@ -22,7 +22,18 @@ jobs:
         uses: ruby/setup-ruby@v1.147.0
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+          #bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      - uses: actions/cache@v2
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-${{ matrix.ruby }}-${{ matrix.ar_version }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ruby }}-${{ matrix.ar_version }}-gems-
+
+      - name: Bundle install
+        run: |
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
       - name: Run PostgreSQL
         run: docker-compose up --detach
       - name: Run tests
