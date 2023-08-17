@@ -279,7 +279,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
       end.each { |_, thread, pid| thread.join; Process.waitpid(pid) }
     end
 
-    let(:concurrency) { [Etc.nprocessors - 1, 1].max }
+    let(:concurrency) { Etc.nprocessors }
     let(:cbx_1) { [] }
     let(:cbx_2) { [] }
     let(:cbx_3) { [] }

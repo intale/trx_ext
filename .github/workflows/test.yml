@@ -34,6 +34,10 @@ jobs:
         run: |
           bundle config path vendor/bundle
           bundle install --jobs 4 --retry 3
+      - name: Cache Docker images.
+        uses: ScribeMD/docker-cache@0.3.4
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('docker-compose.yml') }}
       - name: Run PostgreSQL
         run: docker-compose up --detach
       - name: Run tests
