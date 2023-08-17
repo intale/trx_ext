@@ -8,5 +8,9 @@ gemspec
 gem "rake", "~> 13.0"
 
 if ENV['AR_VERSION']
-  gem 'activerecord', *ENV['AR_VERSION'].split(',')
+  # Given ENV['AR_VERSION'] to equal "6.0" will produce
+  # ```ruby
+  # gem 'activerecord', "~> 6.0", "< 6.1"
+  # ```
+  gem 'activerecord', "~> #{ENV['AR_VERSION']}", "< #{ENV['AR_VERSION'].next}"
 end
