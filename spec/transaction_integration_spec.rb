@@ -274,11 +274,12 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
 
   describe 'Multi-process multi-thread integration' do
     subject do
-      Array.new([Etc.nprocessors - 1, 1].max) do
+      Array.new(concurrency) do
         query.call
       end.each { |_, thread, pid| thread.join; Process.waitpid(pid) }
     end
 
+    let(:concurrency) { [Etc.nprocessors - 1, 1].max }
     let(:cbx_1) { [] }
     let(:cbx_2) { [] }
     let(:cbx_3) { [] }
@@ -321,7 +322,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
     end
     it 'creates correct amount of records' do
       subject
-      expect(DummyRecord.count).to eq(Etc.nprocessors * 3)
+      expect(DummyRecord.count).to eq(concurrency * 3)
     end
   end
 end
