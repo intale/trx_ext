@@ -17,9 +17,9 @@ jobs:
     env:
       AR_VERSION: ${{ matrix.ar_version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1.147.0
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
           #bundler-cache: true # runs 'bundle install' and caches installed gems automatically
