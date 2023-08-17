@@ -274,7 +274,7 @@ RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERS
 
   describe 'Multi-process multi-thread integration' do
     subject do
-      Array.new(Etc.nprocessors.tap { |n| puts "Number of CPUs: #{n}" }) do
+      Array.new([Etc.nprocessors - 1, 1].max) do
         query.call
       end.each { |_, thread, pid| thread.join; Process.waitpid(pid) }
     end
