@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+unless defined?(ActiveRecord::DatabaseAlreadyExists) # rails 6.0 doesn't have this constant
+  require 'pg'
+  ActiveRecord::DatabaseAlreadyExists = PG::DuplicateDatabase
+end
+
 # Dummy record. It is used to test transaction integration.
 class DummyRecord < ActiveRecord::Base
   class << self

@@ -21,9 +21,6 @@ require_relative '../spec/support/dummy_record'
 ActiveRecord::Base.logger = ActiveSupport::Logger.new(STDOUT)
 TrxExt.logger = ActiveSupport::Logger.new(STDOUT)
 
-if Config.db_config
-  ActiveRecord::Base.establish_connection(Config.db_config)
-  DummyRecord.setup
-end
+DummyRecord.setup
 
 IRB.start(__FILE__)

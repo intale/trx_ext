@@ -8,7 +8,7 @@ Currently, the implementation only works for ActiveRecord PostgreSQL adapter. Fe
 
 Because the implementation of this gem is a patch for `ActiveRecord::ConnectionAdapters::PostgreSQLAdapter` - carefully test its integration into your project. For example, if your project patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
 
-Currently, the implementation is tested for `6.0.4.4`, `6.1.4.4` and `7.0.1` versions of ActiveRecord(see [TrxExt::SUPPORTED_AR_VERSIONS](lib/trx_ext/version.rb))
+Currently, the implementation is tested for rails v6+.
 
 ## Requirements
 
@@ -584,22 +584,13 @@ end
 ### Setup
 
   - After checking out the repo, run `bin/setup` to install dependencies.
-  - Setup postgresql server with `serializable` transaction isolation level - you have to set `default_transaction_isolation` config option to `serializable` in your `postgresql.conf` file
-  - Create pg user and a database. This database will be used to run tests. When running console, this database will be used as a default database to connect to. Example:
-    ```shell
-    sudo -u postgres createuser postgres --superuser
-    sudo -u postgres psql --command="CREATE DATABASE trx_ext_db OWNER postgres"    
-    ```
-  - Setup db connection settings. Copy config sample and edit it to match your created pg user and database:
-    ```shell
-    cp spec/support/config/database.yml.sample spec/support/config/database.yml  
-    ```
+  - run docker-compose using `docker-compose up` command - it starts necessary services 
     
 Now you can run `bin/console` for an interactive prompt that will allow you to experiment.
 
 ### Tests
 
-You can run tests for currently installed AR using `rspec` command. There is `bin/test_all_ar_versions` executable that allows you to run tests within all supported AR versions(see [TrxExt::SUPPORTED_AR_VERSIONS](lib/trx_ext/version.rb)) as well.
+You can run tests for currently installed AR using `rspec` command. There is `bin/test_all_ar_versions` executable that allows you to run tests within all supported AR versions.
 
 ### Other
 
