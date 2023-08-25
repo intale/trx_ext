@@ -1,8 +1,10 @@
 ## [Unreleased]
 
-Nothing new yet
+## [1.0.6] - 2023-08-25
 
-## [1.0.5] - 2022-01-27
+- Refactoring the retry implementation
+
+## [1.0.5] - 2023-05-11
 
 - Load `Object` extension earlier
 
