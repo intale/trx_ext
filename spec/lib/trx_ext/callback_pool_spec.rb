@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe TrxExt::CallbackPool do
   let(:instance) { described_class.new }
 

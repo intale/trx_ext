@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe "Transaction Integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERSION']})" : ''}" do
   subject do
     callback = proc {|_, _, _, _, payload| query_parts << payload[:sql] unless payload[:name] == 'SCHEMA'}

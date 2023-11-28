@@ -8,8 +8,6 @@ end
 # Dummy record. It is used to test transaction integration.
 class DummyRecord < ActiveRecord::Base
   class << self
-    wrap_in_trx :find_or_create_by
-
     def setup
       migration = ActiveRecord::Migration.new
       ActiveRecord::Base.establish_connection(Config.db_config.merge('database' => 'postgres'))
@@ -30,5 +28,10 @@ class DummyRecord < ActiveRecord::Base
         migration.add_index :dummy_records, :unique_name, unique: true
       end
     end
+
+    def find_or_create_by(attributes, &block)
+      find_by(attributes) || create(attributes, &block)
+    end
+    wrap_in_trx :find_or_create_by
   end
 end
