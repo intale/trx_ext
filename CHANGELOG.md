@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+- `trx_ext` now supports any adapter, supported by rails
+- drop support of rails v6.0
+- support multiple databases configurations
+
 ## [1.0.6] - 2023-08-25
 
 - Refactoring the retry implementation
