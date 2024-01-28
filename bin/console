@@ -13,14 +13,5 @@ require "trx_ext"
 # Pry.start
 
 require "irb"
-require "logger"
-require 'active_record'
-require_relative '../spec/support/config'
-require_relative '../spec/support/dummy_record'
-
-ActiveRecord::Base.logger = ActiveSupport::Logger.new(STDOUT)
-TrxExt.logger = ActiveSupport::Logger.new(STDOUT)
-
-DummyRecord.setup
 
 IRB.start(__FILE__)

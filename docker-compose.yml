@@ -3,6 +3,7 @@ version: "3.5"
 services:
   postgres:
     image: trx_ext/postgres
+    command: ["postgres", "-c", "log_statement=all"]
     build: .
     ports:
       - 5532:5432

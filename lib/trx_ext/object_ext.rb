@@ -22,16 +22,17 @@ module TrxExt
     #   #   (0.2ms)  COMMIT
     #
     # @param method [Symbol] a name of the method
+    # @param class_name [String, nil] pass an ActiveRecord model class name to define the appropriate connection of the
+    #   transaction
     # @return [Symbol]
-    def wrap_in_trx(method)
+    def wrap_in_trx(method, class_name = nil)
       module_to_prepend = Module.new do
-        class_eval <<-RUBY, __FILE__, __LINE__ + 1
-          def #{method}(...)
-            trx do
-              super
-            end
+        define_method(method) do |*args, **kwargs, &blk|
+          context = class_name&.constantize || self
+          context.trx do
+            super(*args, **kwargs, &blk)
           end
-        RUBY
+        end
       end
       prepend module_to_prepend
       method
@@ -39,6 +40,8 @@ module TrxExt
 
     # A shorthand version of <tt>ActiveRecord::Base.transaction</tt>
     def trx(...)
+      return transaction(...) if respond_to?(:transaction)
+
       ActiveRecord::Base.transaction(...)
     end
   end

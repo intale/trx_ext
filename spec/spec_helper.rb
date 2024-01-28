@@ -1,19 +1,7 @@
 # frozen_string_literal: true
 
-ENV['RACK_ENV'] ||= 'test'
-
-require 'trx_ext'
-require 'factory_bot'
 require 'timecop'
 require 'rspec/its'
-require 'active_record'
-
-Dir[File.expand_path('support/**/*.rb', __dir__)].each { |f| require(f) }
-
-logger = ActiveSupport::Logger.new('log/test.log')
-ActiveRecord::Base.logger = logger
-TrxExt.logger = logger
-Time.zone = ActiveSupport::TimeZone['UTC']
 
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
@@ -56,15 +44,6 @@ RSpec.configure do |config|
   config.disable_monkey_patching!
   config.order = :random
   config.seed = Kernel.srand % 0xFFFF
-
-  config.before(:suite) { DummyRecord.setup }
-  config.before(:suite) do
-    FactoryBot.find_definitions
-  end
-
-  config.after(:each) do
-    DummyRecord.delete_all
-  end
 
   config.around(timecop: :present?.to_proc) do |example|
     if example.metadata[:timecop].is_a? Time

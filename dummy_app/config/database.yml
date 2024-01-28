@@ -1,0 +1,38 @@
+# SQLite. Versions 3.8.0 and up are supported.
+#   gem install sqlite3
+#
+#   Ensure the SQLite 3 gem is defined in your Gemfile
+#   gem "sqlite3"
+#
+default_pg: &default_pg
+  adapter: 'postgresql'
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5532
+  pool: <%= Etc.nprocessors + 1 %>
+  timeout: 5000
+  prepared_statements: false
+
+default_sqlite: &default_sqlite
+  adapter: 'sqlite3'
+  pool: <%= Etc.nprocessors + 1 %>
+  timeout: 1000
+  prepared_statements: false
+  migrations_paths: db/primary_sqlite
+
+development:
+  primary_pg:
+    <<: *default_pg
+    database: trx_ext
+  primary_sqlite:
+    <<: *default_sqlite
+    database: db/trx_ext.sqlite3
+
+test:
+  primary_pg:
+    <<: *default_pg
+    database: trx_ext_text
+  primary_sqlite:
+    <<: *default_sqlite
+    database: db/trx_ext_test.sqlite3

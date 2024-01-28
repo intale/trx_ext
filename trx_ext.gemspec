@@ -32,10 +32,4 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'activerecord', '>= 6'
-  spec.add_dependency 'pg', '~> 1.2'
-  spec.add_development_dependency 'rspec', "~> 3.10"
-  spec.add_development_dependency 'timecop', "~> 0.9.4"
-  spec.add_development_dependency 'factory_bot', "~> 6.2"
-  spec.add_development_dependency 'fivemat', '~> 1.3'
-  spec.add_development_dependency 'rspec-its', '~> 1.3'
 end

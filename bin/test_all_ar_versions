@@ -2,7 +2,7 @@
 
 # frozen_string_literal: true
 
-%w[6.0 6.1 7.0 7.1].each do |ar_version|
+%w[6.1 7.0 7.1].each do |ar_version|
   `rm Gemfile.lock`
   Process.waitpid(Kernel.spawn({ 'AR_VERSION' => ar_version }, "bundle install --quiet", close_others: true))
   Process.waitpid(Kernel.spawn({ 'AR_VERSION' => ar_version }, "rspec", close_others: true))

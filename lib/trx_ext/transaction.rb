@@ -7,7 +7,7 @@ module TrxExt
     # for available params
     def transaction(**kwargs, &blk)
       pool = nil
-      TrxExt::Retry.retry_until_serialized do
+      TrxExt::Retry.retry_until_serialized(self) do
         super(**kwargs) do
           pool = TrxExt::CallbackPool.add(previous: current_callbacks_chain_link)
           self.current_callbacks_chain_link = pool

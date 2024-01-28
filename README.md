@@ -1,20 +1,18 @@
 # TrxExt
 
-Extends functionality of ActiveRecord's transaction to auto-retry failed SQL transaction in case of deadlock, serialization error or unique constraint error. It also allows you to define `on_complete` callback that is being executed after SQL transaction is finished(either COMMIT-ed or ROLLBACK-ed).
-
-Currently, the implementation only works for ActiveRecord PostgreSQL adapter. Feel free to improve it.
+Extends functionality of ActiveRecord's transaction to auto-retry failed SQL transaction in case of deadlock, serialization error or unique constraint error. It also allows you to define `on_complete` callback that is being executed after SQL transaction is finished(either COMMIT-ed or ROLLBACK-ed). The implementation is not bound to any database, but relies on the rails connection adapters instead. Thus, if your database is supported by rails out of the box, then the gem's features will just work.
 
 **WARNING!**
 
-Because the implementation of this gem is a patch for `ActiveRecord::ConnectionAdapters::PostgreSQLAdapter` - carefully test its integration into your project. For example, if your project patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
+Because the implementation of this gem is a patch for `ActiveRecord::ConnectionAdapters::AbstractAdapter` - carefully test its integration into your project. For example, if your application patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
 
-Currently, the implementation is tested for rails v6+.
+Currently, the implementation is tested for rails v6.1+.
 
 ## Requirements
 
 - ActiveRecord 6+
 - Ruby 3
-- PostgreSQL 9.1+
+- Any non-EOL version of MySQL/SQLite/PostgreSQL.
 
 ## Installation
 
@@ -36,7 +34,6 @@ Or install it yourself as:
 
 ```ruby
 require 'trx_ext'
-require 'active_record'
 
 # Object#trx is a shorthand of ActiveRecord::Base.transaction
 trx do
@@ -66,6 +63,27 @@ class DummyRecord
 end
 ```
 
+If you are using non-primary connection for your model - you have to explicitly call `trx` method over that class:
+
+```ruby
+DummyRecord.trx do
+  DummyRecord.first || DummyRecord.create
+end
+```
+In general, you should know about this if you are using multi-databases configuration.
+
+If you want to wrap some method into a transaction using `wrap_in_trx` outside the ActiveRecord model context, you can pass a model name as a second argument explicitly:
+
+```ruby
+class MyAwesomeLib
+  # Wrap method in transaction
+  def some_method_with_quieries
+    DummyRecord.first || DummyRecord.create    
+  end
+  wrap_in_trx :some_method_with_quieries, 'DummyRecord'
+end
+```
+
 ## Configuration
 
 ```ruby
@@ -77,15 +95,11 @@ end
 
 ## How it works?
 
-Your either every single AR SQL query or whole AR transaction is retried whenever it throws deadlock error, serialization error or unique constraint error. In case of AR transaction - the block of code that the AR transaction belongs to is re-executed, thus the transaction is retried.
+When an ActiveRecord SQL query fails due to deadlock error, serialization error or unique constraint error - it is automatically retried. In case of ActiveRecord transaction - the block of code the AR transaction belongs to is re-executed, thus the transaction query is retried.
 
 ## Rules you have to stick when using this gem
 
-> "Don't put more into a single transaction than needed for integrity purposes."
->
-> — [PostgreSQL documentation]
-
-Since `ActiveRecord::ConnectionAdapters::PostgreSQLAdapter` is now patched with `TrxExt::Retry.with_retry_until_serialized`, there's no need to wrap every AR query in a `trx` block to ensure integrity. Wrap code in an explicit `trx` block if and only if it can or does produce two or more SQL queries *and* it is important to run those queries together atomically.
+**Don't put into a single transaction more than needed for integrity purposes.**
 
 There is "On complete" feature that allows you to define callbacks(blocks of code) that will be executed after transaction is complete. See `On complete callbacks` section bellow for the docs. See `On complete callbacks integrity` section bellow to be aware about different situations with them.
 
