@@ -597,8 +597,14 @@ end
 
 ### Setup
 
-  - After checking out the repo, run `bin/setup` to install dependencies.
-  - run docker-compose using `docker-compose up` command - it starts necessary services 
+- After checking out the repo, run `bundle install` to install dependencies.
+- Run docker-compose using `docker-compose up` command - it starts necessary services
+- Run next command to create dev and test databases:
+
+```shell
+bundle exec rails db:create db:migrate
+RAILS_ENV=test bundle exec rails db:migrate
+```
     
 Now you can run `bin/console` for an interactive prompt that will allow you to experiment.
 

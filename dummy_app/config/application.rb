@@ -2,7 +2,19 @@
 
 require_relative "boot"
 
-require "rails/all"
+require "rails"
+
+%w(
+  active_record/railtie
+  action_controller/railtie
+  action_view/railtie
+).each do |railtie|
+  begin
+    require railtie
+  rescue LoadError
+  end
+end
+
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -29,7 +41,7 @@ module DummyApp
     if rails_version < Gem::Version.new('7.0.0')
       config.active_record.legacy_connection_handling = false
     end
-    config.active_job.queue_adapter = :async
+    # config.active_job.queue_adapter = :async
 
 
     if defined?(FactoryBotRails)

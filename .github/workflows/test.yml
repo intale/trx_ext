@@ -45,4 +45,5 @@ jobs:
         timeout-minutes: 3
         run: |
           sleep 10
+          RAILS_ENV=test bundle exec rails db:create db:migrate
           bundle exec rspec

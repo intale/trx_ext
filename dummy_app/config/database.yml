@@ -32,7 +32,7 @@ development:
 test:
   primary_pg:
     <<: *default_pg
-    database: trx_ext_text
+    database: trx_ext_test
   primary_sqlite:
     <<: *default_sqlite
     database: db/trx_ext_test.sqlite3
