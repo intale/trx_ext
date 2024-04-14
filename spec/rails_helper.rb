@@ -72,5 +72,6 @@ RSpec.configure do |config|
     DummyPgRecord.delete_all
     DummySqliteRecord.delete_all
     DummyMysqlRecord.delete_all
+    DummyTrilogyRecord.delete_all
   end
 end

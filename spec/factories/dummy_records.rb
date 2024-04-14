@@ -15,4 +15,9 @@ FactoryBot.define do
     name { 'a name' }
     sequence(:unique_name) { |n| "unique name #{n}" }
   end
+
+  factory :dummy_trilogy_record do
+    name { 'a name' }
+    sequence(:unique_name) { |n| "unique name #{n}" }
+  end
 end

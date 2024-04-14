@@ -19,4 +19,4 @@ services:
       - 3406:3306
       - 34060:33060
     environment:
-      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true

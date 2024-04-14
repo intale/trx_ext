@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERSION']})" : ''}" do
+RSpec.describe "Trilogy implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERSION']})" : ''}" do
   subject do
     callback = proc do |_, _, _, id, payload|
       query_parts << payload[:sql] unless payload[:name] == 'SCHEMA'
@@ -15,15 +15,15 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
 
   describe 'wrapped in transaction', timecop: Time.zone.parse('2018-08-09 10:00:00 UTC') do
     describe '.find_or_create_by' do
-      let(:query) { DummyMysqlRecord.find_or_create_by(name: 'a name') { |r| r.unique_name = '1' } }
+      let(:query) { DummyTrilogyRecord.find_or_create_by(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'wraps SELECT and INSERT in same transaction when using atomic method' do
         is_expected.to(
           eq(
             [
               'BEGIN',
-              'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`name` = \'a name\' LIMIT 1',
-              'INSERT INTO `dummy_mysql_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
+              'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`name` = \'a name\' LIMIT 1',
+              'INSERT INTO `dummy_trilogy_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
               'COMMIT'
             ]
           )
@@ -36,9 +36,9 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
         Class.new do
           class << self
             def find_or_create_by(attributes, &block)
-              DummyMysqlRecord.find_by(attributes) || DummyMysqlRecord.create(attributes, &block)
+              DummyTrilogyRecord.find_by(attributes) || DummyTrilogyRecord.create(attributes, &block)
             end
-            wrap_in_trx :find_or_create_by, 'DummyMysqlRecord'
+            wrap_in_trx :find_or_create_by, 'DummyTrilogyRecord'
           end
         end
 
@@ -50,8 +50,8 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
           eq(
             [
               'BEGIN',
-              'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`name` = \'a name\' LIMIT 1',
-              'INSERT INTO `dummy_mysql_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
+              'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`name` = \'a name\' LIMIT 1',
+              'INSERT INTO `dummy_trilogy_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
               'COMMIT'
             ]
           )
@@ -60,15 +60,15 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
     end
 
     describe '.find_or_create_by!' do
-      let(:query) { DummyMysqlRecord.find_or_create_by!(name: 'a name') { |r| r.unique_name = '1' } }
+      let(:query) { DummyTrilogyRecord.find_or_create_by!(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'does not wrap SELECT and INSERT in same transaction when using non-atomic method' do
         is_expected.to(
           eq(
             [
-              'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`name` = \'a name\' LIMIT 1',
+              'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`name` = \'a name\' LIMIT 1',
               'BEGIN',
-              'INSERT INTO `dummy_mysql_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
+              'INSERT INTO `dummy_trilogy_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
               'COMMIT'
             ]
           )
@@ -78,15 +78,15 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
   end
 
   describe 'retry until serialized', timecop: Time.zone.parse('2018-08-09 10:00:00 UTC') do
-    let!(:dummy_record_1) { FactoryBot.create(:dummy_mysql_record, unique_name: 'unique name 1') }
-    let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record, unique_name: 'unique name 2') }
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_trilogy_record, unique_name: 'unique name 1') }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_trilogy_record, unique_name: 'unique name 2') }
     let(:callback) { object_spy('callback') }
     let(:query) do
-      DummyMysqlRecord.trx do |c|
+      DummyTrilogyRecord.trx do |c|
         c.on_complete { callback.exec }
-        DummyMysqlRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_1.unique_name)
+        DummyTrilogyRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_1.unique_name)
         sleep 1
-        DummyMysqlRecord.where(unique_name: dummy_record_2.unique_name).update_all(name: 'new 1')
+        DummyTrilogyRecord.where(unique_name: dummy_record_2.unique_name).update_all(name: 'new 1')
       end
     end
 
@@ -96,9 +96,9 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
 
     it 'retries query until serialized' do
       pid = fork do
-        DummyMysqlRecord.trx do
-          DummyMysqlRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_2.unique_name)
-          DummyMysqlRecord.where(unique_name: dummy_record_1.unique_name).update_all(name: 'new 2')
+        DummyTrilogyRecord.trx do
+          DummyTrilogyRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_2.unique_name)
+          DummyTrilogyRecord.where(unique_name: dummy_record_1.unique_name).update_all(name: 'new 2')
         end
       end
       subject
@@ -107,12 +107,12 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
         eq(
           [
             'BEGIN',
-            "SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
-            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`name` = 'new 1' WHERE `dummy_mysql_records`.`unique_name` = 'unique name 2'",
+            "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
+            "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 1' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2'",
             'ROLLBACK',
             'BEGIN',
-            "SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
-            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`name` = 'new 1' WHERE `dummy_mysql_records`.`unique_name` = 'unique name 2'",
+            "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
+            "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 1' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2'",
             'COMMIT'
           ]
         )
@@ -129,8 +129,8 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
       let(:error_class) { Class.new(StandardError) }
       let(:query) do
         i = 0
-        DummyMysqlRecord.trx do |c|
-          DummyMysqlRecord.first
+        DummyTrilogyRecord.trx do |c|
+          DummyTrilogyRecord.first
           c.on_complete {
             i += 1
             raise(error_class.new("deadlock detected")) if i < 2
@@ -149,7 +149,7 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
         expect(query_parts).to eq(
           [
             'BEGIN',
-            'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` ORDER BY `dummy_mysql_records`.`id` ASC LIMIT 1',
+            'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` ORDER BY `dummy_trilogy_records`.`id` ASC LIMIT 1',
             'COMMIT'
           ]
         )
@@ -158,8 +158,8 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
   end
 
   describe 'query retry on ActiveRecord::RecordNotUnique exception' do
-    let!(:dummy_record_1) { FactoryBot.create(:dummy_mysql_record) }
-    let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record) }
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_trilogy_record) }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_trilogy_record) }
     let(:query) { dummy_record_2.update_columns(unique_name: dummy_record_1.unique_name) }
 
     it 'retries query up to TrxExt.config.unique_retries times' do
@@ -170,7 +170,7 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
       expect(query_parts).to(
         eq(
           [
-            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`unique_name` = '#{dummy_record_1.unique_name}' WHERE `dummy_mysql_records`.`id` = #{dummy_record_2.id}"
+            "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`unique_name` = '#{dummy_record_1.unique_name}' WHERE `dummy_trilogy_records`.`id` = #{dummy_record_2.id}"
           ] * (TrxExt.config.unique_retries + 1)
         )
       )
@@ -178,11 +178,11 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
   end
 
   describe 'query retry on ActiveRecord::RecordNotUnique exception inside multiple transactions' do
-    let!(:dummy_record_1) { FactoryBot.create(:dummy_mysql_record) }
-    let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record) }
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_trilogy_record) }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_trilogy_record) }
     let(:query) do
-      DummyMysqlRecord.trx do
-        DummyMysqlRecord.trx do
+      DummyTrilogyRecord.trx do
+        DummyTrilogyRecord.trx do
           dummy_record_2.update_columns(unique_name: dummy_record_1.unique_name)
         end
       end
@@ -197,7 +197,7 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
         eq(
           [
             "BEGIN",
-            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`unique_name` = '#{dummy_record_1.unique_name}' WHERE `dummy_mysql_records`.`id` = #{dummy_record_2.id}",
+            "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`unique_name` = '#{dummy_record_1.unique_name}' WHERE `dummy_trilogy_records`.`id` = #{dummy_record_2.id}",
             "ROLLBACK"
           ] * (TrxExt.config.unique_retries + 1)
         )
@@ -219,20 +219,20 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
     let(:query) do
       proc do
         [
-          DummyMysqlRecord.trx do |c|
-            dr = DummyMysqlRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
+          DummyTrilogyRecord.trx do |c|
+            dr = DummyTrilogyRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
             c.on_complete { dr.update(name: dr.unique_name) }
           end,
           Thread.new do
-            DummyMysqlRecord.trx do |c|
-              dr = DummyMysqlRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
+            DummyTrilogyRecord.trx do |c|
+              dr = DummyTrilogyRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
               c.on_complete { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
           end,
           fork do
-            DummyMysqlRecord.trx do |c|
-              dr = DummyMysqlRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
+            DummyTrilogyRecord.trx do |c|
+              dr = DummyTrilogyRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
               c.on_complete { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
@@ -244,19 +244,19 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
 
     it 'executes callbacks being run in the current thread the proper amount of times' do
       subject
-      expect(DummyMysqlRecord.where("unique_name like 'thread1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
+      expect(DummyTrilogyRecord.where("unique_name like 'thread1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
     end
     it 'executes callbacks being run in another thread the proper amount of times' do
       subject
-      expect(DummyMysqlRecord.where("unique_name like 'thread2%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
+      expect(DummyTrilogyRecord.where("unique_name like 'thread2%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
     end
     it 'executes callbacks being run in the fork the proper amount of times' do
       subject
-      expect(DummyMysqlRecord.where("unique_name like 'fork1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
+      expect(DummyTrilogyRecord.where("unique_name like 'fork1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
     end
     it 'creates correct amount of records' do
       subject
-      expect(DummyMysqlRecord.count).to eq(concurrency * 3)
+      expect(DummyTrilogyRecord.count).to eq(concurrency * 3)
     end
   end
 end

@@ -19,6 +19,7 @@ module TrxExt
       ActiveSupport.on_load(:active_record_mysql2adapter, &method(:integrate_into_class))
       ActiveSupport.on_load(:active_record_postgresqladapter, &method(:integrate_into_class))
       ActiveSupport.on_load(:active_record_sqlite3adapter, &method(:integrate_into_class))
+      ActiveSupport.on_load(:active_record_trilogyadapter, &method(:integrate_into_class))
     end
 
     # @return [void]

@@ -1,6 +1,11 @@
 # TrxExt
 
-Extends functionality of ActiveRecord's transaction to auto-retry failed SQL transaction in case of deadlock, serialization error or unique constraint error. It also allows you to define `on_complete` callback that is being executed after SQL transaction is finished(either COMMIT-ed or ROLLBACK-ed). The implementation is not bound to any database, but relies on the rails connection adapters instead. Thus, if your database is supported by rails out of the box, then the gem's features will just work.
+Extends functionality of ActiveRecord's transaction to auto-retry failed SQL transaction in case of deadlock, serialization error or unique constraint error. It also allows you to define `on_complete` callback that is being executed after SQL transaction is finished(either COMMIT-ed or ROLLBACK-ed). The implementation is not bound to any database, but relies on the rails connection adapters instead. Thus, if your database is supported by rails out of the box, then the gem's features will just work. Currently supported adapters:
+
+- `postgresql`
+- `mysql2`
+- `sqlite3`
+- `trilogy`
 
 **WARNING!**
 
@@ -12,7 +17,6 @@ Currently, the implementation is tested for rails v7.1+. **If you need the suppo
 
 - ActiveRecord 7.1+
 - Ruby 3
-- Any non-EOL version of MySQL/SQLite/PostgreSQL.
 
 ## Installation
 

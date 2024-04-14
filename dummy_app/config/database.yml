@@ -24,13 +24,22 @@ default_sqlite: &default_sqlite
 default_mysql: &default_mysql
   adapter: 'mysql2'
   username: root
-  password: mysql
   host: 127.0.0.1
   port: 3406
   pool: <%= Etc.nprocessors + 1 %>
   timeout: 5000
   prepared_statements: false
   migrations_paths: db/primary_mysql
+
+default_trilogy: &default_trilogy
+  adapter: 'trilogy'
+  username: root
+  host: 127.0.0.1
+  port: 3406
+  pool: <%= Etc.nprocessors + 1 %>
+  timeout: 5000
+  prepared_statements: false
+  migrations_paths: db/primary_trilogy
 
 development:
   primary_pg:
@@ -42,6 +51,9 @@ development:
   primary_mysql:
     <<: *default_mysql
     database: trx_ext
+  primary_trilogy:
+    <<: *default_trilogy
+    database: trx_ext_trilogy
 
 test:
   primary_pg:
@@ -53,3 +65,6 @@ test:
   primary_mysql:
     <<: *default_mysql
     database: trx_ext_test
+  primary_trilogy:
+    <<: *default_trilogy
+    database: trx_ext_trilogy_test
