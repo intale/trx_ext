@@ -2,10 +2,21 @@ version: "3.5"
 
 services:
   postgres:
-    image: trx_ext/postgres
-    command: ["postgres", "-c", "log_statement=all"]
-    build: .
+    image: postgres:16
+    command: ["postgres", "-c", "log_statement=all", "-c", "default_transaction_isolation=serializable"]
     ports:
       - 5532:5432
     environment:
       - POSTGRES_PASSWORD=postgres
+  mysql:
+    image: mysql:8.3
+    command:
+      - /usr/local/bin/mysqld.sh
+    volumes:
+      - ./docker/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysqld.sh:/usr/local/bin/mysqld.sh
+    ports:
+      - 3406:3306
+      - 34060:33060
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql

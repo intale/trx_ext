@@ -116,13 +116,41 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
     it 'retries query up to TrxExt.config.unique_retries times' do
       begin
         subject
-      rescue TrxExt::Retry::RetryLimitExceeded
+      rescue ActiveRecord::RecordNotUnique
       end
 
       expect(query_parts).to(
         eq(
           [
             "UPDATE \"dummy_sqlite_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_sqlite_records\".\"id\" = #{dummy_record_2.id}"
+          ] * (TrxExt.config.unique_retries + 1)
+        )
+      )
+    end
+  end
+
+  describe 'query retry on ActiveRecord::RecordNotUnique exception inside multiple transactions' do
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_sqlite_record) }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_sqlite_record) }
+    let(:query) do
+      DummySqliteRecord.trx do
+        DummySqliteRecord.trx do
+          dummy_record_2.update_columns(unique_name: dummy_record_1.unique_name)
+        end
+      end
+    end
+
+    it 'retries query up to TrxExt.config.unique_retries times' do
+      begin
+        subject
+      rescue ActiveRecord::RecordNotUnique
+      end
+      expect(query_parts).to(
+        eq(
+          [
+            "begin transaction",
+            "UPDATE \"dummy_sqlite_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_sqlite_records\".\"id\" = #{dummy_record_2.id}",
+            "rollback transaction"
           ] * (TrxExt.config.unique_retries + 1)
         )
       )

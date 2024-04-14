@@ -2,16 +2,25 @@
 
 module TrxExt
   module Retry
-    class RetryLimitExceeded < StandardError
-      attr_reader :original_error
-
-      def initialize(original_error)
-        @original_error = original_error
-        super("Retries limit of #{TrxExt.config.unique_retries} has exceeded")
-      end
-    end
-
     class << self
+      # Wraps specified method in a +TrxExt::Retry.retry_until_serialized+ loop.
+      #
+      # @param klass [Class] class a method belongs to
+      # @param method [Symbol] instance method that needs to be wrapped into +TrxExt::Retry.retry_until_serialized+
+      def with_retry_until_serialized(klass, method)
+        module_to_prepend = Module.new do
+          klass.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+            def #{method}(...)
+              ::TrxExt::Retry.retry_until_serialized(self) do
+                super
+              end
+            end
+          RUBY
+        end
+        prepend module_to_prepend
+        method
+      end
+
       # Retries block execution until serialization errors are no longer raised
       def retry_until_serialized(connection)
         retries_count = 0
@@ -24,7 +33,7 @@ module TrxExt
           end
           raise
         rescue ActiveRecord::RecordNotUnique => error
-          raise RetryLimitExceeded.new(error) unless retry_query?(connection, retries_count)
+          raise unless retry_query?(connection, retries_count)
 
           retries_count += 1
           TrxExt.log("Detected transaction rollback condition. Reason - #{error.inspect}. Retrying...")

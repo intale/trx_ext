@@ -71,5 +71,6 @@ RSpec.configure do |config|
   config.before(:each) do
     DummyPgRecord.delete_all
     DummySqliteRecord.delete_all
+    DummyMysqlRecord.delete_all
   end
 end

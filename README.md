@@ -6,11 +6,11 @@ Extends functionality of ActiveRecord's transaction to auto-retry failed SQL tra
 
 Because the implementation of this gem is a patch for `ActiveRecord::ConnectionAdapters::AbstractAdapter` - carefully test its integration into your project. For example, if your application patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
 
-Currently, the implementation is tested for rails v6.1+.
+Currently, the implementation is tested for rails v7.1+. **If you need the support of rails v6.0, v6.1, v7.0 - please use v1.x of this gem, but it works with PostgreSQL only.**
 
 ## Requirements
 
-- ActiveRecord 6+
+- ActiveRecord 7.1+
 - Ruby 3
 - Any non-EOL version of MySQL/SQLite/PostgreSQL.
 

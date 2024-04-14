@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
-RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERSION']})" : ''}" do
+RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV['AR_VERSION']})" : ''}" do
   subject do
-    callback = proc { |_, _, _, _, payload| query_parts << payload[:sql] unless payload[:name] == 'SCHEMA' }
+    callback = proc do |_, _, _, id, payload|
+      #query_parts[id] ||= []
+      query_parts << payload[:sql] unless payload[:name] == 'SCHEMA'
+    end
     ActiveSupport::Notifications.subscribed callback, 'sql.active_record' do
       query
     end
@@ -13,15 +16,15 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
 
   describe 'wrapped in transaction', timecop: Time.zone.parse('2018-08-09 10:00:00 UTC') do
     describe '.find_or_create_by' do
-      let(:query) { DummyPgRecord.find_or_create_by(name: 'a name') { |r| r.unique_name = '1' } }
+      let(:query) { DummyMysqlRecord.find_or_create_by(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'wraps SELECT and INSERT in same transaction when using atomic method' do
         is_expected.to(
           eq(
             [
               'BEGIN',
-              'SELECT "dummy_pg_records".* FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-              'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\') RETURNING "id"',
+              'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`name` = \'a name\' LIMIT 1',
+              'INSERT INTO `dummy_mysql_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
               'COMMIT'
             ]
           )
@@ -34,9 +37,9 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
         Class.new do
           class << self
             def find_or_create_by(attributes, &block)
-              DummyPgRecord.find_by(attributes) || DummyPgRecord.create(attributes, &block)
+              DummyMysqlRecord.find_by(attributes) || DummyMysqlRecord.create(attributes, &block)
             end
-            wrap_in_trx :find_or_create_by, 'DummyPgRecord'
+            wrap_in_trx :find_or_create_by, 'DummyMysqlRecord'
           end
         end
 
@@ -48,8 +51,8 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
           eq(
             [
               'BEGIN',
-              'SELECT "dummy_pg_records".* FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-              'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\') RETURNING "id"',
+              'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`name` = \'a name\' LIMIT 1',
+              'INSERT INTO `dummy_mysql_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
               'COMMIT'
             ]
           )
@@ -58,15 +61,15 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
     end
 
     describe '.find_or_create_by!' do
-      let(:query) { DummyPgRecord.find_or_create_by!(name: 'a name') { |r| r.unique_name = '1' } }
+      let(:query) { DummyMysqlRecord.find_or_create_by!(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'does not wrap SELECT and INSERT in same transaction when using non-atomic method' do
         is_expected.to(
           eq(
             [
-              'SELECT "dummy_pg_records".* FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
+              'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`name` = \'a name\' LIMIT 1',
               'BEGIN',
-              'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\') RETURNING "id"',
+              'INSERT INTO `dummy_mysql_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
               'COMMIT'
             ]
           )
@@ -76,13 +79,15 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
   end
 
   describe 'retry until serialized', timecop: Time.zone.parse('2018-08-09 10:00:00 UTC') do
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_mysql_record, unique_name: 'unique name 1') }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record, unique_name: 'unique name 2') }
     let(:callback) { object_spy('callback') }
     let(:query) do
-      DummyPgRecord.trx do |c|
+      DummyMysqlRecord.trx do |c|
         c.on_complete { callback.exec }
-        DummyPgRecord.where(name: 'a name').exists?
-        FactoryBot.create(:dummy_pg_record, name: 'a name', unique_name: '2')
+        DummyMysqlRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_1.unique_name)
         sleep 1
+        DummyMysqlRecord.where(unique_name: dummy_record_2.unique_name).update_all(name: 'new 1')
       end
     end
 
@@ -92,29 +97,27 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
 
     it 'retries query until serialized' do
       pid = fork do
-        DummyPgRecord.trx do
-          DummyPgRecord.where(name: 'a name').exists?
-          FactoryBot.create(:dummy_pg_record, name: 'a name', unique_name: '1')
+        DummyMysqlRecord.trx do
+          DummyMysqlRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_2.unique_name)
+          DummyMysqlRecord.where(unique_name: dummy_record_1.unique_name).update_all(name: 'new 2')
         end
-        exit!
       end
-
-      is_expected.to(
+      subject
+      Process.waitpid(pid)
+      expect(subject).to(
         eq(
           [
             'BEGIN',
-            'SELECT 1 AS one FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-            'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'2\', \'2018-08-09 10:00:00\') RETURNING "id"',
-            'COMMIT',
+            "SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
+            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`name` = 'new 1' WHERE `dummy_mysql_records`.`unique_name` = 'unique name 2'",
             'ROLLBACK',
             'BEGIN',
-            'SELECT 1 AS one FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-            'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'2\', \'2018-08-09 10:00:00\') RETURNING "id"',
+            "SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` WHERE `dummy_mysql_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
+            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`name` = 'new 1' WHERE `dummy_mysql_records`.`unique_name` = 'unique name 2'",
             'COMMIT'
           ]
         )
       )
-      Process.waitpid(pid)
     end
     it 'executes callback only once' do
       subject
@@ -127,8 +130,8 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
       let(:error_class) { Class.new(StandardError) }
       let(:query) do
         i = 0
-        DummyPgRecord.trx do |c|
-          DummyPgRecord.first
+        DummyMysqlRecord.trx do |c|
+          DummyMysqlRecord.first
           c.on_complete {
             i += 1
             raise(error_class.new("deadlock detected")) if i < 2
@@ -147,7 +150,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
         expect(query_parts).to eq(
           [
             'BEGIN',
-            'SELECT "dummy_pg_records".* FROM "dummy_pg_records" ORDER BY "dummy_pg_records"."id" ASC LIMIT 1',
+            'SELECT `dummy_mysql_records`.* FROM `dummy_mysql_records` ORDER BY `dummy_mysql_records`.`id` ASC LIMIT 1',
             'COMMIT'
           ]
         )
@@ -156,8 +159,8 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
   end
 
   describe 'query retry on ActiveRecord::RecordNotUnique exception' do
-    let!(:dummy_record_1) { FactoryBot.create(:dummy_pg_record) }
-    let!(:dummy_record_2) { FactoryBot.create(:dummy_pg_record) }
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_mysql_record) }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record) }
     let(:query) { dummy_record_2.update_columns(unique_name: dummy_record_1.unique_name) }
 
     it 'retries query up to TrxExt.config.unique_retries times' do
@@ -168,7 +171,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
       expect(query_parts).to(
         eq(
           [
-            "UPDATE \"dummy_pg_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_pg_records\".\"id\" = #{dummy_record_2.id}"
+            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`unique_name` = '#{dummy_record_1.unique_name}' WHERE `dummy_mysql_records`.`id` = #{dummy_record_2.id}"
           ] * (TrxExt.config.unique_retries + 1)
         )
       )
@@ -176,11 +179,11 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
   end
 
   describe 'query retry on ActiveRecord::RecordNotUnique exception inside multiple transactions' do
-    let!(:dummy_record_1) { FactoryBot.create(:dummy_pg_record) }
-    let!(:dummy_record_2) { FactoryBot.create(:dummy_pg_record) }
+    let!(:dummy_record_1) { FactoryBot.create(:dummy_mysql_record) }
+    let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record) }
     let(:query) do
-      DummyPgRecord.trx do
-        DummyPgRecord.trx do
+      DummyMysqlRecord.trx do
+        DummyMysqlRecord.trx do
           dummy_record_2.update_columns(unique_name: dummy_record_1.unique_name)
         end
       end
@@ -195,7 +198,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
         eq(
           [
             "BEGIN",
-            "UPDATE \"dummy_pg_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_pg_records\".\"id\" = #{dummy_record_2.id}",
+            "UPDATE `dummy_mysql_records` SET `dummy_mysql_records`.`unique_name` = '#{dummy_record_1.unique_name}' WHERE `dummy_mysql_records`.`id` = #{dummy_record_2.id}",
             "ROLLBACK"
           ] * (TrxExt.config.unique_retries + 1)
         )
@@ -217,24 +220,24 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
     let(:query) do
       proc do
         [
-          DummyPgRecord.trx do |c|
-            dr = DummyPgRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
+          DummyMysqlRecord.trx do |c|
+            dr = DummyMysqlRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
             c.on_complete { dr.update(name: dr.unique_name) }
           end,
           Thread.new do
-            DummyPgRecord.trx do |c|
-              dr = DummyPgRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
+            DummyMysqlRecord.trx do |c|
+              dr = DummyMysqlRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
               c.on_complete { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
           end,
           fork do
-            DummyPgRecord.trx do |c|
-              dr = DummyPgRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
+            DummyMysqlRecord.trx do |c|
+              dr = DummyMysqlRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
               c.on_complete { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
-            exit
+            exit!
           end
         ]
       end
@@ -242,19 +245,19 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
 
     it 'executes callbacks being run in the current thread the proper amount of times' do
       subject
-      expect(DummyPgRecord.where("unique_name like 'thread1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
+      expect(DummyMysqlRecord.where("unique_name like 'thread1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
     end
     it 'executes callbacks being run in another thread the proper amount of times' do
       subject
-      expect(DummyPgRecord.where("unique_name like 'thread2%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
+      expect(DummyMysqlRecord.where("unique_name like 'thread2%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
     end
     it 'executes callbacks being run in the fork the proper amount of times' do
       subject
-      expect(DummyPgRecord.where("unique_name like 'fork1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
+      expect(DummyMysqlRecord.where("unique_name like 'fork1%'").to_a).to all satisfy { |dr| dr.unique_name == dr.name }
     end
     it 'creates correct amount of records' do
       subject
-      expect(DummyPgRecord.count).to eq(concurrency * 3)
+      expect(DummyMysqlRecord.count).to eq(concurrency * 3)
     end
   end
 end

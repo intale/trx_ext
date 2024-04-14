@@ -40,6 +40,8 @@ module TrxExt
 
     # A shorthand version of <tt>ActiveRecord::Base.transaction</tt>
     def trx(...)
+      # If trx method is called over AR model - we should take this into account. Otherwise - call it over
+      # ActiveRecord::Base class. This ensures proper connection picking in sharded environment.
       return transaction(...) if respond_to?(:transaction)
 
       ActiveRecord::Base.transaction(...)

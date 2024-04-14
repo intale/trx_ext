@@ -21,6 +21,17 @@ default_sqlite: &default_sqlite
   prepared_statements: false
   migrations_paths: db/primary_sqlite
 
+default_mysql: &default_mysql
+  adapter: 'mysql2'
+  username: root
+  password: mysql
+  host: 127.0.0.1
+  port: 3406
+  pool: <%= Etc.nprocessors + 1 %>
+  timeout: 5000
+  prepared_statements: false
+  migrations_paths: db/primary_mysql
+
 development:
   primary_pg:
     <<: *default_pg
@@ -28,6 +39,9 @@ development:
   primary_sqlite:
     <<: *default_sqlite
     database: db/trx_ext.sqlite3
+  primary_mysql:
+    <<: *default_mysql
+    database: trx_ext
 
 test:
   primary_pg:
@@ -36,3 +50,6 @@ test:
   primary_sqlite:
     <<: *default_sqlite
     database: db/trx_ext_test.sqlite3
+  primary_mysql:
+    <<: *default_mysql
+    database: trx_ext_test

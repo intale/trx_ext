@@ -34,3 +34,4 @@
 Gemfile.lock
 db/schema.rb
 db/primary_sqlite_schema.rb
+db/primary_mysql_schema.rb
