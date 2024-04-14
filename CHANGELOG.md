@@ -1,8 +1,8 @@
 ## [Unreleased]
 
 - `trx_ext` now supports any adapter, supported by rails
-- drop support of rails v6.0
-- support multiple databases configurations
+- **Requirement is rails v7.1+ now**. This is because rails v7.1 introduced unification of connection adapters which allowed to implement the integration with all of them
+- Support multiple databases configurations
 
 ## [1.0.6] - 2023-08-25
 
