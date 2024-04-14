@@ -1,6 +1,8 @@
 ## [Unreleased]
 
-- `trx_ext` now supports any adapter, supported by rails
+## [2.0.0] - 2024-04-14
+
+- `trx_ext` now supports any adapter(except `mysql`; `mysql2` is supported though), supported by rails
 - **Requirement is rails v7.1+ now**. This is because rails v7.1 introduced unification of connection adapters which allowed to implement the integration with all of them
 - Support multiple databases configurations
 
