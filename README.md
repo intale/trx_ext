@@ -92,9 +92,9 @@ end
 ## Configuration
 
 ```ruby
-TrxExt.configure do |c|
+TrxExt.configure do |config|
   # Number of retries before failing when unique constraint error raises. Default is 5
-  c.unique_retries = 5
+  config.unique_retries = 5
 end
 ```
 
@@ -231,7 +231,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
     COMMIT
     ```
 
-* It may happen that you need to invoke mailer's method inside `trx` block and pass there values that are calculated within the transaction block. Normally, you need to extract those values into after-transaction code and invoke mailer after transaction's end. Use `on_complete` callback to simplify your code:
+* It may happen that you need to invoke mailer's method inside `trx` block and pass there values that are calculated within the transaction block. Normally, you need to extract those values into after-transaction code and invoke mailer after transaction's end. Use `after_commit` callback to simplify your code:
 
   #### Bad
     ```ruby
@@ -241,7 +241,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
         # May be invoked more than one time if transaction is retried
         Mailer.registration_confirmation(user.id).deliver_later 
       end
-    end  
+    end
     ```
 
   #### Good (before refactoring)
@@ -260,7 +260,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
     trx do |t|
       user = User.find_or_initialize_by(email: email)
       if user.save
-        t.on_complete { Mailer.registration_confirmation(user.id).deliver_later }
+        t.after_commit { Mailer.registration_confirmation(user.id).deliver_later }
       end
     end
     ```
