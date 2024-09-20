@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [3.0.0] - 2024-09-20
+- Drop `trx_ext` callbacks implementation in favour of rails v7.2 transaction callbacks
+
 ## [2.0.1] - 2024-09-20
 - Restrict rails version to `< 7.2`. Rails v7.2 has suddenly released its own transaction callbacks which interferes with `trx_ext` transaction callbacks. Example of rails v7.2 transaction callbacks:
 

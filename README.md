@@ -1,6 +1,6 @@
 # TrxExt
 
-Extends functionality of ActiveRecord's transaction to auto-retry failed SQL transaction in case of deadlock, serialization error or unique constraint error. It also allows you to define `on_complete` callback that is being executed after SQL transaction is finished(either COMMIT-ed or ROLLBACK-ed). The implementation is not bound to any database, but relies on the rails connection adapters instead. Thus, if your database is supported by rails out of the box, then the gem's features will just work. Currently supported adapters:
+Extends functionality of ActiveRecord's transaction to auto-retry failed SQL transaction in case of deadlock, serialization error or unique constraint error. The implementation is not bound to any database, but relies on the rails connection adapters instead. Thus, if your database is supported by rails out of the box, then the gem's features will just work. Currently supported adapters:
 
 - `postgresql`
 - `mysql2`
@@ -9,14 +9,15 @@ Extends functionality of ActiveRecord's transaction to auto-retry failed SQL tra
 
 **WARNING!**
 
-Because the implementation of this gem patches ActiveRecord - carefully test its integration into your project. For example, if your application patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
-
-Currently, the implementation is tested for rails v7.1+. **If you need the support of rails v6.0, v6.1, v7.0 - please use v1.x of this gem, but it works with PostgreSQL only.**
+Because the implementation of this gem wraps some ActiveRecord methods - carefully test its integration into your project. For example, if your application patches ActiveRecord or if some of your gems patches ActiveRecord - there might be conflicts in the implementation which could potentially lead to the data loss.
 
 ## Requirements
 
-- ActiveRecord 7.1+
+- ActiveRecord 7.2+
 - Ruby 3
+
+**If you need the support of rails v6.0, v6.1, v7.0 - please use v1.x of this gem, but it works with PostgreSQL only.**
+**If you need the support of rails v7.1 - please use v2.x of this gem.**
 
 ## Installation
 
@@ -46,15 +47,15 @@ end
 
 trx do
   DummyRecord.first || DummyRecord.create
-  trx do |c|
-    c.on_complete { puts "This message will be printed after COMMIT statement." }
+  trx do |t|
+    t.after_commit { puts "This message will be printed after COMMIT statement." }
   end  
 end
 
 trx do
   DummyRecord.first || DummyRecord.create
-  trx do |c|
-    c.on_complete { puts "This message will be printed after ROLLBACK statement." }    
+  trx do |t|
+    t.after_rollback { puts "This message will be printed after ROLLBACK statement." }
   end
   raise ActiveRecord::Rollback
 end
@@ -62,7 +63,7 @@ end
 class DummyRecord
   # Wrap method in transaction
   wrap_in_trx def some_method_with_quieries
-    DummyRecord.first || DummyRecord.create    
+    DummyRecord.first || DummyRecord.create
   end
 end
 ```
@@ -82,7 +83,7 @@ If you want to wrap some method into a transaction using `wrap_in_trx` outside t
 class MyAwesomeLib
   # Wrap method in transaction
   def some_method_with_quieries
-    DummyRecord.first || DummyRecord.create    
+    DummyRecord.first || DummyRecord.create
   end
   wrap_in_trx :some_method_with_quieries, 'DummyRecord'
 end
@@ -194,7 +195,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
 
     def update_posts
       trx do
-        @user.posts.update_all(banned: true) if @user.user_permission.admin?          
+        @user.posts.update_all(banned: true) if @user.user_permission.admin?
       end  
     end    
     ```
@@ -237,7 +238,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
     trx do
       user = User.find_or_initialize_by(email: email)
       if user.save
-        # May be invoked more than one time if transaction is retried        
+        # May be invoked more than one time if transaction is retried
         Mailer.registration_confirmation(user.id).deliver_later 
       end
     end  
@@ -256,10 +257,10 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
 
   #### Good (after refactoring)
     ```ruby
-    trx do |c|
+    trx do |t|
       user = User.find_or_initialize_by(email: email)
       if user.save
-        c.on_complete { Mailer.registration_confirmation(user.id).deliver_later }   
+        t.on_complete { Mailer.registration_confirmation(user.id).deliver_later }
       end
     end
     ```
@@ -273,11 +274,11 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
       User.deleted.find_each do |user|
         if user.created_at > 2.days.ago
           user.active!
-          resurrected_users_count += 1      
+          resurrected_users_count += 1
         end
       end
     end
-    puts resurrected_users_count    
+    puts resurrected_users_count
     ```
 
   #### Good
@@ -288,7 +289,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
       User.deleted.find_each do |user|
         if user.created_at > 2.days.ago
           user.active!
-          resurrected_users_count += 1      
+          resurrected_users_count += 1
         end
       end
     end
@@ -304,7 +305,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
           if @user.update(user_params)
             redirect_to @user
           else
-            render :edit                              
+            render :edit
           end
         end
       end
@@ -319,7 +320,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
         if @user.update(user_params)
           redirect_to @user
         else
-          render :edit                              
+          render :edit
         end
       end
     end
@@ -332,7 +333,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
         if @user.update(user_params)
           redirect_to @user
         else
-          render :edit                              
+          render :edit
         end
       end
     end
@@ -342,11 +343,11 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
     ```ruby
     class UsersController
       def update
-        trx do |c|
+        trx do |t|
           if @user.update(user_params)
-            c.on_complete { redirect_to @user }
+            t.after_commit { redirect_to @user }
           else
-            c.on_complete { render :edit }                              
+            t.after_commit { render :edit }
           end
         end
       end
@@ -377,7 +378,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
       if @post.tags_arr.include?('special')
         @post.update_columns(special: true)
       end
-      @post.mongo_post.update(special: @post.tags_arr.include?('special'))        
+      @post.mongo_post.update(special: @post.tags_arr.include?('special'))
     end
     ```
 
@@ -397,12 +398,12 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
   #### Bad
     ```ruby
     def some_method
-      trx do |c|
+      trx do |t|
         user = User.find_by(email: email)
         return user if user
         
         user = User.create(email: email)
-        c.on_complete { Mailer.registration_confirmation(user.id).deliver_later }
+        t.after_commit { Mailer.registration_confirmation(user.id).deliver_later }
       end
     end
     ```
@@ -414,7 +415,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
     def some_method
       puts "Start"
       yield
-      puts "End"      
+      puts "End"
     end
   
     def another_method
@@ -442,7 +443,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
     wrap_in_trx def some_method
       return if User.where(email: email).exists?
         
-      User.create(email: email)     
+      User.create(email: email)
     end
     ```
 
@@ -453,130 +454,7 @@ There is "On complete" feature that allows you to define callbacks(blocks of cod
       return user if user
       
       user = User.create(email: email)
-      trx { |c| c.on_complete { Mailer.registration_confirmation(user.id).deliver_later } }
-    end
-    ```
-
-## On complete callbacks
-
-On-complete callbacks are defined with `TrxExt::CallbackPool#on_complete` method. An instance of `TrxExt::CallbackPool` is passed in each transaction block. You may add as much on-complete callbacks as you want by calling `TrxExt::CallbackPool#on_complete` several times - they will be executed in the order you define
-them(FIFO principle). The on-complete callbacks from nested transactions will be executed from the most deep to the most top transaction. Another words, if top transaction defines `<#TrxExt::CallbackPool 0x1>` instance and nested transaction defines `<#TrxExt::CallbackPool 0x2>` instance then, when executing on-complete callbacks - the callbacks of `<#TrxExt::CallbackPool 0x2>` instance will be executed first(FILO principle).
-
-Example:
-
-```ruby
-ActiveRecord::Base.transaction do |c1|
-  User.first
-  c1.on_complete { puts "This is 3rd message" }
-  ActiveRecord::Base.transaction do |c2|
-    User.last
-    c2.on_complete { puts "This is 2nd message" }
-    ActiveRecord::Base.transaction do |c3|
-      c3.on_complete { puts "This is 1st message" }
-      User.first(2)
-    end
-  end
-  c1.on_complete { puts "This is 4th message" }
-end
-```
-
-If you don't need to define on-complete callbacks - you may skip explicit definition of block's argument.
-
-Example:
-
-```ruby
-ActiveRecord::Base.transaction { User.first }
-```
-
-Keep in mind, that all on-complete callbacks are not a part of the transaction. If you want to make it transactional - you need to wrap it in another transaction.
-
-Example:
-
-```ruby
-ActiveRecord::Base.transaction do |c1|
-  User.first
-  c1.on_complete do
-    ActiveRecord::Base.transaction do
-      User.find_or_create_by(email: email)
-    end
-  end
-end
-```
-
-You may define on-complete callbacks inside another on-complete callbacks. You may define another transactions in
-on-complete callbacks. Just don't get confused in the order they are going to be executed.
-
-Example:
-
-```ruby
-ActiveRecord::Base.transaction do |c1|
-  User.first
-  c1.on_complete do
-    puts "This line will be executed first"
-    ActiveRecord::Base.transaction do |c2|
-      User.last
-      c2.on_complete do
-        puts "This line will be executed second"
-      end
-    end
-    puts "This line will be executed third"
-  end
-end
-```
-
-Also, please avoid usage of the callbacks that belong to one transaction in another transaction explicitly. This complicates the readability of the code.
-
-Example:
-
-```ruby
-ActiveRecord::Base.transaction do |c1|
-  User.first
-  c1.on_complete do
-    ActiveRecord::Base.transaction do
-      User.last
-      c1.on_complete do
-        puts "This will be executed at the time when parent transaction's on-complete callbacks are executed!"
-      end
-    end
-  end
-end
-```
-
-## On complete callbacks integrity
-
-* Don't define callbacks blocks as lambdas unless you are 100% sure what you are doing. Lambda has a bit different behaviour comparing to Proc. Refer to [ruby documentation](https://ruby-doc.org/core-2.6.5/Proc.html#class-Proc-label-Lambda+and+non-lambda+semantics).
-
-* When defining a callback - make sure that it does not depend on transaction's integrity. Another words - define it in a way like it is a normal code implementation outside the transaction:
-
-  #### Bad
-    ```ruby
-    trx do |c|
-      user = User.find(id)
-      user.referrals.create(referral_attrs)
-      c.on_complete do  
-        Mailer.new_referral(
-          user_id: user.id, total_referrals: user.referrals.count
-        ).deliver_later 
-      end
-    end
-    ```
-
-  #### Explanation
-  The example above introduces two issues:
-  - `on_complete` callback does not depend on the result of `user.referrals.create(referral_attrs)`. And it should - we only need to send the email only if referral is created. Solution - add the condition for the `on_complete` callback
-  - the number of user's referrals `user.referrals.count` is calculated inside `on_complete`, but it should be calculated within the transaction. Solution - calculate referrals count in transaction, extract its value into local variable and use that variable in the `on_complete` callback
-
-  #### Good
-    ```ruby
-    trx do |c|
-      user = User.find(id)
-      referral = user.referrals.create(referral_attrs)
-      if referral.persisted?
-        total_referrals = user.referrals.count
-        c.on_complete do 
-          Mailer.new_referral(user_id: user.id, total_referrals: total_referrals).deliver_later
-        end
-      end
+      trx { |t| t.after_commit { Mailer.registration_confirmation(user.id).deliver_later } }
     end
     ```
 
@@ -588,7 +466,7 @@ You can make any method atomic by wrapping it into transaction using `#wrap_in_t
 class ApplicationRecord < ActiveRecord::Base
   class << self
     wrap_in_trx :find_or_create_by
-    wrap_in_trx :find_or_create_by!    
+    wrap_in_trx :find_or_create_by!
   end
 
   wrap_in_trx def some_method
@@ -602,7 +480,7 @@ end
 ### Setup
 
 - After checking out the repo, run `bundle install` to install dependencies.
-- Run docker-compose using `docker-compose up` command - it starts necessary services
+- Run docker-compose using `docker compose up` command - it starts necessary services
 - Run next command to create dev and test databases:
 
 ```shell
