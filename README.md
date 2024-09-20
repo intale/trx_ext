@@ -14,7 +14,7 @@ Because the implementation of this gem wraps some ActiveRecord methods - careful
 ## Requirements
 
 - ActiveRecord 7.2+
-- Ruby 3
+- Ruby 3.1+
 
 **If you need the support of rails v6.0, v6.1, v7.0 - please use v1.x of this gem, but it works with PostgreSQL only.**
 **If you need the support of rails v7.1 - please use v2.x of this gem.**

@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = "Allow you to retry deadlocks, serialization errors, non-unique errors."
   spec.homepage      = "https://github.com/intale/trx_ext"
   spec.license       = "MIT"
-  spec.required_ruby_version = ">= 3.0.0"
+  spec.required_ruby_version = ">= 3.1.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
