@@ -82,8 +82,8 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
     let!(:dummy_record_2) { FactoryBot.create(:dummy_mysql_record, unique_name: 'unique name 2') }
     let(:callback) { object_spy('callback') }
     let(:query) do
-      DummyMysqlRecord.trx do |c|
-        c.on_complete { callback.exec }
+      DummyMysqlRecord.trx do |t|
+        t.after_commit { callback.exec }
         DummyMysqlRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_1.unique_name)
         sleep 1
         DummyMysqlRecord.where(unique_name: dummy_record_2.unique_name).update_all(name: 'new 1')
@@ -125,13 +125,13 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
   end
 
   describe 'retry until serialized with callbacks' do
-    describe 'when error is raised in on_complete callback' do
+    describe 'when error is raised in after_commit callback' do
       let(:error_class) { Class.new(StandardError) }
       let(:query) do
         i = 0
-        DummyMysqlRecord.trx do |c|
+        DummyMysqlRecord.trx do |t|
           DummyMysqlRecord.first
-          c.on_complete {
+          t.after_commit {
             i += 1
             raise(error_class.new("deadlock detected")) if i < 2
           }
@@ -219,21 +219,21 @@ RSpec.describe "MySQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{ENV
     let(:query) do
       proc do
         [
-          DummyMysqlRecord.trx do |c|
+          DummyMysqlRecord.trx do |t|
             dr = DummyMysqlRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
-            c.on_complete { dr.update(name: dr.unique_name) }
+            t.after_commit { dr.update(name: dr.unique_name) }
           end,
           Thread.new do
-            DummyMysqlRecord.trx do |c|
+            DummyMysqlRecord.trx do |t|
               dr = DummyMysqlRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
-              c.on_complete { dr.update(name: dr.unique_name) }
+              t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
           end,
           fork do
-            DummyMysqlRecord.trx do |c|
+            DummyMysqlRecord.trx do |t|
               dr = DummyMysqlRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
-              c.on_complete { dr.update(name: dr.unique_name) }
+              t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
             exit!

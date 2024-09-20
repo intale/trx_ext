@@ -76,13 +76,13 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
   end
 
   describe 'retry until serialized with callbacks' do
-    describe 'when error is raised in on_complete callback' do
+    describe 'when error is raised in after_commit callback' do
       let(:error_class) { Class.new(StandardError) }
       let(:query) do
         i = 0
-        DummySqliteRecord.trx do |c|
+        DummySqliteRecord.trx do |t|
           DummySqliteRecord.first
-          c.on_complete {
+          t.after_commit {
             i += 1
             raise(error_class.new("deadlock detected")) if i < 2
           }
@@ -171,21 +171,21 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
     let(:query) do
       proc do
         [
-          DummySqliteRecord.trx do |c|
+          DummySqliteRecord.trx do |t|
             dr = DummySqliteRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
-            c.on_complete { dr.update(name: dr.unique_name) }
+            t.after_commit { dr.update(name: dr.unique_name) }
           end,
           Thread.new do
-            DummySqliteRecord.trx do |c|
+            DummySqliteRecord.trx do |t|
               dr = DummySqliteRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
-              c.on_complete { dr.update(name: dr.unique_name) }
+              t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
           end,
           fork do
-            DummySqliteRecord.trx do |c|
+            DummySqliteRecord.trx do |t|
               dr = DummySqliteRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
-              c.on_complete { dr.update(name: dr.unique_name) }
+              t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
             exit

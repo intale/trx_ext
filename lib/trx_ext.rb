@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
 require 'active_record'
-require_relative "trx_ext/callback_pool"
 require_relative "trx_ext/object_ext"
 require_relative "trx_ext/retry"
-require_relative "trx_ext/transaction"
 require_relative "trx_ext/config"
 require_relative "trx_ext/version"
 
@@ -39,12 +37,12 @@ module TrxExt
     private
 
     def integrate_into_class(klass)
-      klass.prepend TrxExt::Transaction
       TrxExt::Retry.with_retry_until_serialized(klass, :exec_query)
       TrxExt::Retry.with_retry_until_serialized(klass, :exec_insert)
       TrxExt::Retry.with_retry_until_serialized(klass, :exec_delete)
       TrxExt::Retry.with_retry_until_serialized(klass, :exec_update)
       TrxExt::Retry.with_retry_until_serialized(klass, :exec_insert_all)
+      TrxExt::Retry.with_retry_until_serialized(klass, :transaction)
     end
   end
 end

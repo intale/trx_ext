@@ -78,8 +78,8 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
   describe 'retry until serialized', timecop: Time.zone.parse('2018-08-09 10:00:00 UTC') do
     let(:callback) { object_spy('callback') }
     let(:query) do
-      DummyPgRecord.trx do |c|
-        c.on_complete { callback.exec }
+      DummyPgRecord.trx do |t|
+        t.after_commit { callback.exec }
         DummyPgRecord.where(name: 'a name').exists?
         FactoryBot.create(:dummy_pg_record, name: 'a name', unique_name: '2')
         sleep 1
@@ -123,13 +123,13 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
   end
 
   describe 'retry until serialized with callbacks' do
-    describe 'when error is raised in on_complete callback' do
+    describe 'when error is raised in after_commit callback' do
       let(:error_class) { Class.new(StandardError) }
       let(:query) do
         i = 0
-        DummyPgRecord.trx do |c|
+        DummyPgRecord.trx do |t|
           DummyPgRecord.first
-          c.on_complete {
+          t.after_commit {
             i += 1
             raise(error_class.new("deadlock detected")) if i < 2
           }
@@ -217,21 +217,21 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
     let(:query) do
       proc do
         [
-          DummyPgRecord.trx do |c|
+          DummyPgRecord.trx do |t|
             dr = DummyPgRecord.create(unique_name: "thread1-#{SecureRandom.hex(16)}")
-            c.on_complete { dr.update(name: dr.unique_name) }
+            t.after_commit { dr.update(name: dr.unique_name) }
           end,
           Thread.new do
-            DummyPgRecord.trx do |c|
+            DummyPgRecord.trx do |t|
               dr = DummyPgRecord.create(unique_name: "thread2-#{SecureRandom.hex(16)}")
-              c.on_complete { dr.update(name: dr.unique_name) }
+              t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
           end,
           fork do
-            DummyPgRecord.trx do |c|
+            DummyPgRecord.trx do |t|
               dr = DummyPgRecord.create(unique_name: "fork1-#{SecureRandom.hex(16)}")
-              c.on_complete { dr.update(name: dr.unique_name) }
+              t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
             exit
