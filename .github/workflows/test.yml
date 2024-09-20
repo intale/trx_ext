@@ -39,7 +39,7 @@ jobs:
         with:
           key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('docker-compose.yml') }}
       - name: Run PostgreSQL
-        run: docker-compose up --detach
+        run: docker compose up --detach
       - name: Run tests
         timeout-minutes: 3
         run: |
