@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [3.0.1] - 2024-12-08
+- Allow rails v8.0
+
 ## [3.0.0] - 2024-09-20
 - Drop `trx_ext` callbacks implementation in favour of rails v7.2 transaction callbacks
 
