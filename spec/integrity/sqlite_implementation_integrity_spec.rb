@@ -16,16 +16,12 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
       let(:query) { DummySqliteRecord.find_or_create_by(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'wraps SELECT and INSERT in same transaction when using atomic method' do
-        is_expected.to(
-          match(
-            [
-              'begin transaction',
-              'SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1',
-              a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')'),
-              'commit transaction'
-            ]
-          )
-        )
+        aggregate_failures do
+          expect(subject[0]).to match(/begin/i)
+          expect(subject[1]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1')
+          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')')
+          expect(subject[3]).to match(/commit/i)
+        end
       end
     end
 
@@ -44,16 +40,12 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
       let(:query) { dummy_class.find_or_create_by(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'wraps SELECT and INSERT in same transaction when using atomic method' do
-        is_expected.to(
-          match(
-            [
-              'begin transaction',
-              'SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1',
-              a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')'),
-              'commit transaction'
-            ]
-          )
-        )
+        aggregate_failures do
+          expect(subject[0]).to match(/begin/i)
+          expect(subject[1]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1')
+          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')')
+          expect(subject[3]).to match(/commit/i)
+        end
       end
     end
 
@@ -61,16 +53,12 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
       let(:query) { DummySqliteRecord.find_or_create_by!(name: 'a name') { |r| r.unique_name = '1' } }
 
       it 'does not wrap SELECT and INSERT in same transaction when using non-atomic method' do
-        is_expected.to(
-          match(
-            [
-              'SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1',
-              'begin transaction',
-              a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')'),
-              'commit transaction'
-            ]
-          )
-        )
+        aggregate_failures do
+          expect(subject[0]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1')
+          expect(subject[1]).to match(/begin/i)
+          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')')
+          expect(subject[3]).to match(/commit/i)
+        end
       end
     end
   end
@@ -97,13 +85,11 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
           subject
         rescue error_class
         end
-        expect(query_parts).to eq(
-          [
-            'begin transaction',
-            'SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" ORDER BY "dummy_sqlite_records"."id" ASC LIMIT 1',
-            'commit transaction'
-          ]
-        )
+        aggregate_failures do
+          expect(query_parts[0]).to match(/begin/i)
+          expect(query_parts[1]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" ORDER BY "dummy_sqlite_records"."id" ASC LIMIT 1')
+          expect(query_parts[2]).to match(/commit/i)
+        end
       end
     end
   end
@@ -145,15 +131,13 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
         subject
       rescue ActiveRecord::RecordNotUnique
       end
-      expect(query_parts).to(
-        eq(
-          [
-            "begin transaction",
-            "UPDATE \"dummy_sqlite_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_sqlite_records\".\"id\" = #{dummy_record_2.id}",
-            "rollback transaction"
-          ] * (TrxExt.config.unique_retries + 1)
-        )
-      )
+      aggregate_failures do
+        expect(query_parts[0]).to match(/begin/i)
+        expect(query_parts[1]).to eq("UPDATE \"dummy_sqlite_records\" SET \"unique_name\" = '#{dummy_record_1.unique_name}' WHERE \"dummy_sqlite_records\".\"id\" = #{dummy_record_2.id}")
+        expect(query_parts[2]).to match(/rollback/i)
+        expect(query_parts.each_slice(3)).to all satisfy { _1 == query_parts[0..2] }
+        expect(query_parts.each_slice(3).size).to eq(TrxExt.config.unique_retries + 1)
+      end
     end
   end
 

@@ -21,7 +21,7 @@ gem 'timecop', '~> 0.9.8'
 # To support postgresql adapter
 gem 'pg', '~> 1.5', '>= 1.5.4'
 # To support sqlite3 adapter
-gem 'sqlite3', '~> 1.7', '>= 1.7.1'
+gem 'sqlite3'
 # To support mysql2 adapter
 gem 'mysql2', '~> 0.5.5'
 # To support trilogy adapter
