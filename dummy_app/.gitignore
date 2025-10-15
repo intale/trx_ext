@@ -32,7 +32,3 @@
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 Gemfile.lock
-db/schema.rb
-db/primary_sqlite_schema.rb
-db/primary_mysql_schema.rb
-db/primary_trilogy_schema.rb
