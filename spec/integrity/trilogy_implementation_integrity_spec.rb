@@ -23,7 +23,7 @@ RSpec.describe "Trilogy implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{E
             [
               'BEGIN',
               'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`name` = \'a name\' LIMIT 1',
-              'INSERT INTO `dummy_trilogy_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
+              'INSERT INTO `dummy_trilogy_records` (`created_at`, `name`, `unique_name`) VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\')',
               'COMMIT'
             ]
           )
@@ -51,7 +51,7 @@ RSpec.describe "Trilogy implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{E
             [
               'BEGIN',
               'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`name` = \'a name\' LIMIT 1',
-              'INSERT INTO `dummy_trilogy_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
+              'INSERT INTO `dummy_trilogy_records` (`created_at`, `name`, `unique_name`) VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\')',
               'COMMIT'
             ]
           )
@@ -68,7 +68,7 @@ RSpec.describe "Trilogy implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{E
             [
               'SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`name` = \'a name\' LIMIT 1',
               'BEGIN',
-              'INSERT INTO `dummy_trilogy_records` (`name`, `unique_name`, `created_at`) VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')',
+              'INSERT INTO `dummy_trilogy_records` (`created_at`, `name`, `unique_name`) VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\')',
               'COMMIT'
             ]
           )

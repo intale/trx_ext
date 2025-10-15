@@ -19,7 +19,7 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
         aggregate_failures do
           expect(subject[0]).to match(/begin/i)
           expect(subject[1]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1')
-          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')')
+          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\')')
           expect(subject[3]).to match(/commit/i)
         end
       end
@@ -43,7 +43,7 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
         aggregate_failures do
           expect(subject[0]).to match(/begin/i)
           expect(subject[1]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1')
-          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')')
+          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\')')
           expect(subject[3]).to match(/commit/i)
         end
       end
@@ -56,7 +56,7 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
         aggregate_failures do
           expect(subject[0]).to eq('SELECT "dummy_sqlite_records".* FROM "dummy_sqlite_records" WHERE "dummy_sqlite_records"."name" = \'a name\' LIMIT 1')
           expect(subject[1]).to match(/begin/i)
-          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\')')
+          expect(subject[2]).to a_string_including('INSERT INTO "dummy_sqlite_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\')')
           expect(subject[3]).to match(/commit/i)
         end
       end

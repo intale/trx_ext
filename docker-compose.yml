@@ -2,14 +2,14 @@ version: "3.5"
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     command: ["postgres", "-c", "log_statement=all", "-c", "default_transaction_isolation=serializable"]
     ports:
       - 5532:5432
     environment:
       - POSTGRES_PASSWORD=postgres
   mysql:
-    image: mysql:8.3
+    image: mysql:9.4
     command:
       - /usr/local/bin/mysqld.sh
     volumes:

@@ -21,7 +21,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
             [
               'BEGIN',
               'SELECT "dummy_pg_records".* FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-              'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\') RETURNING "id"',
+              'INSERT INTO "dummy_pg_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\') RETURNING "id"',
               'COMMIT'
             ]
           )
@@ -49,7 +49,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
             [
               'BEGIN',
               'SELECT "dummy_pg_records".* FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-              'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\') RETURNING "id"',
+              'INSERT INTO "dummy_pg_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\') RETURNING "id"',
               'COMMIT'
             ]
           )
@@ -66,7 +66,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
             [
               'SELECT "dummy_pg_records".* FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
               'BEGIN',
-              'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'1\', \'2018-08-09 10:00:00\') RETURNING "id"',
+              'INSERT INTO "dummy_pg_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'1\') RETURNING "id"',
               'COMMIT'
             ]
           )
@@ -104,12 +104,12 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
           [
             'BEGIN',
             'SELECT 1 AS one FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-            'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'2\', \'2018-08-09 10:00:00\') RETURNING "id"',
+            'INSERT INTO "dummy_pg_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'2\') RETURNING "id"',
             'COMMIT',
             'ROLLBACK',
             'BEGIN',
             'SELECT 1 AS one FROM "dummy_pg_records" WHERE "dummy_pg_records"."name" = \'a name\' LIMIT 1',
-            'INSERT INTO "dummy_pg_records" ("name", "unique_name", "created_at") VALUES (\'a name\', \'2\', \'2018-08-09 10:00:00\') RETURNING "id"',
+            'INSERT INTO "dummy_pg_records" ("created_at", "name", "unique_name") VALUES (\'2018-08-09 10:00:00\', \'a name\', \'2\') RETURNING "id"',
             'COMMIT'
           ]
         )
