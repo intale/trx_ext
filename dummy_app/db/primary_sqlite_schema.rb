@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2024_01_28_111549) do
+ActiveRecord::Schema[7.2].define(version: 2024_01_28_111549) do
   create_table "dummy_sqlite_records", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
