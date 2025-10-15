@@ -172,7 +172,7 @@ RSpec.describe "SQLite implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{EN
               t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
-            exit
+            exit!
           end
         ]
       end

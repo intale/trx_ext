@@ -114,6 +114,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
           ]
         )
       )
+    ensure
       Process.waitpid(pid)
     end
     it 'executes callback only once' do
@@ -234,7 +235,7 @@ RSpec.describe "PostgreSQL implementation integrity#{ENV['AR_VERSION'] ? " (AR v
               t.after_commit { dr.update(name: dr.unique_name) }
             end
             sleep 0.1
-            exit
+            exit!
           end
         ]
       end

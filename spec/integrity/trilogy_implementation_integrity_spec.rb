@@ -95,28 +95,51 @@ RSpec.describe "Trilogy implementation integrity#{ENV['AR_VERSION'] ? " (AR v#{E
     end
 
     it 'retries query until serialized' do
+      read_io, write_io = IO.pipe
       pid = fork do
-        DummyTrilogyRecord.trx do
-          DummyTrilogyRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_2.unique_name)
-          DummyTrilogyRecord.where(unique_name: dummy_record_1.unique_name).update_all(name: 'new 2')
+        read_io.close
+        query_parts = []
+        callback = proc do |_, _, _, id, payload|
+          query_parts << payload[:sql] unless payload[:name] == 'SCHEMA'
         end
+        sleep 0.2
+        ActiveSupport::Notifications.subscribed callback, 'sql.active_record' do
+          DummyTrilogyRecord.trx do
+            DummyTrilogyRecord.lock("FOR SHARE").find_by(unique_name: dummy_record_2.unique_name)
+            DummyTrilogyRecord.where(unique_name: dummy_record_1.unique_name).update_all(name: 'new 2')
+          end
+        end
+        write_io.write(query_parts.to_json)
+        write_io.close
+        exit!
       end
+      write_io.close
       subject
+      logs_from_fork = JSON.parse(read_io.read)
+      read_io.close
+      variant1 = [
+        'BEGIN',
+        "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
+        "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 1' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2'",
+        'ROLLBACK',
+        'BEGIN',
+        "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
+        "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 1' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2'",
+        'COMMIT'
+      ]
+      variant2 = [
+        'BEGIN',
+        "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2' LIMIT 1 FOR SHARE",
+        "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 2' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1'",
+        'ROLLBACK',
+        'BEGIN',
+        "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2' LIMIT 1 FOR SHARE",
+        "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 2' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1'",
+        'COMMIT'
+      ]
+      expect([subject, logs_from_fork]).to satisfy { |logs| (logs & [variant1, variant2]).present? }
+    ensure
       Process.waitpid(pid)
-      expect(subject).to(
-        eq(
-          [
-            'BEGIN',
-            "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
-            "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 1' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2'",
-            'ROLLBACK',
-            'BEGIN',
-            "SELECT `dummy_trilogy_records`.* FROM `dummy_trilogy_records` WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 1' LIMIT 1 FOR SHARE",
-            "UPDATE `dummy_trilogy_records` SET `dummy_trilogy_records`.`name` = 'new 1' WHERE `dummy_trilogy_records`.`unique_name` = 'unique name 2'",
-            'COMMIT'
-          ]
-        )
-      )
     end
     it 'executes callback only once' do
       subject
