@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [3.0.2] - 2025-10-30
+- Allow rails v8.1
+
 ## [3.0.1] - 2024-12-08
 - Allow rails v8.0
 
