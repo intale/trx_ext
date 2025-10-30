@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [3.0.3] - 2025-10-30
+- Remove dev files from release
+
 ## [3.0.2] - 2025-10-30
 - Allow rails v8.1
 
